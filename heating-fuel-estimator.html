@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heating Fuel Cost Estimator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e5e2;
+      padding: 2rem;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b6b68;
+      margin-bottom: 1.75rem;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 560px) {
+      .input-grid { grid-template-columns: 1fr 1fr; }
+      .calc-btn { grid-column: 1 / -1; }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b6b68;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .field input {
+      height: 36px;
+      border: 1px solid #d5d5d2;
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 15px;
+      color: #1a1a1a;
+      background: #fff;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: #888; }
+
+    .price-wrap, .sqft-wrap {
+      display: flex;
+      align-items: center;
+      border: 1px solid #d5d5d2;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      height: 36px;
+      transition: border-color 0.15s;
+    }
+
+    .price-wrap:focus-within, .sqft-wrap:focus-within { border-color: #888; }
+
+    .price-wrap .prefix {
+      padding: 0 10px;
+      color: #999;
+      font-size: 15px;
+      border-right: 1px solid #e5e5e2;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .sqft-wrap .suffix {
+      padding: 0 10px;
+      color: #999;
+      font-size: 13px;
+      border-left: 1px solid #e5e5e2;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .price-wrap input, .sqft-wrap input {
+      border: none;
+      border-radius: 0;
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+    }
+
+    .price-wrap input:focus, .sqft-wrap input:focus { border: none; }
+
+    .calc-btn {
+      height: 36px;
+      padding: 0 20px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .calc-btn:hover { background: #333; }
+
+    .error {
+      font-size: 13px;
+      color: #c0392b;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .results { display: none; }
+
+    .region-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f5f5f3;
+      border: 1px solid #e5e5e2;
+      border-radius: 100px;
+      padding: 4px 12px;
+      font-size: 13px;
+      color: #6b6b68;
+      margin-bottom: 1.25rem;
+    }
+
+    .region-badge strong { color: #1a1a1a; font-weight: 500; }
+
+    .year-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 480px) { .year-cards { grid-template-columns: 1fr; } }
+
+    .year-card {
+      background: #fff;
+      border: 1px solid #e5e5e2;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+    }
+
+    .year-card.highlight { border: 2px solid #3b82f6; }
+
+    .year-label {
+      font-size: 12px;
+      color: #6b6b68;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .recent-badge {
+      font-size: 11px;
+      background: #eff6ff;
+      color: #2563eb;
+      padding: 2px 7px;
+      border-radius: 100px;
+    }
+
+    .year-cost {
+      font-size: 24px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .year-detail {
+      font-size: 12px;
+      color: #6b6b68;
+      line-height: 1.6;
+    }
+
+    .year-detail strong { color: #1a1a1a; font-weight: 500; }
+
+    .avg-row {
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      margin-bottom: 1rem;
+    }
+
+    .avg-label { color: #6b6b68; }
+    .avg-value { font-weight: 500; font-size: 16px; }
+
+    .assumptions {
+      font-size: 12px;
+      color: #999;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Heating Fuel Cost Estimator</h1>
+    <p class="subtitle">Estimate your seasonal heating oil cost based on historical weather data for your region.</p>
+
+    <div class="input-grid">
+      <div class="field">
+        <label>Zip code</label>
+        <input type="text" id="zip" placeholder="e.g. 02101" maxlength="5" />
+      </div>
+      <div class="field">
+        <label>Home size</label>
+        <div class="sqft-wrap">
+          <input type="number" id="sqft" placeholder="1500" min="100" max="20000" step="100" value="1500" />
+          <span class="suffix">sq ft</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Price per gallon</label>
+        <div class="price-wrap">
+          <span class="prefix">$</span>
+          <input type="number" id="price" placeholder="4.50" min="0.01" step="0.01" />
+        </div>
+      </div>
+      <button class="calc-btn" onclick="calculate()">Estimate &rarr;</button>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div class="results" id="results">
+      <div class="region-badge">
+        &#x1F4CD; Region: <strong id="regionName"></strong>
+      </div>
+      <div class="year-cards" id="yearCards"></div>
+      <div class="avg-row">
+        <span class="avg-label">3-year average estimated cost</span>
+        <span class="avg-value" id="avgCost"></span>
+      </div>
+      <p class="assumptions" id="assumptions"></p>
+    </div>
+  </div>
+
+  <script>
+    const HDD_DATA = {
+      zone1: { name: "Northern New England / Great Lakes", zips: ["010","011","012","013","014","015","016","017","018","019","021","022","023","024","025","026","027","028","029","030","031","032","033","034","035","036","037","038","039","040","041","042","043","044","045","046","047","048","049","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","480","481","482","483","484","485","486","487","488","489","490","491","492","493","494","495","496","497","498","499","530","531","532","534","535","537","538","539","540","541","542","543","544","545","546","547","548","549"], hdd: [7800, 7500, 7200] },
+      zone2: { name: "Mid-Atlantic / Southern New England", zips: ["060","061","062","063","064","065","066","067","068","069","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229"], hdd: [5400, 5100, 4900] },
+      zone3: { name: "Southeast / Mid-South", zips: ["230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300","301","302","303","304","305","306","307","308","309","310","311","312","313","314","315","316","317","318","319","320","321","322","323","324","325","326","327","328","329","330","331","332","333","334","335","336","337","338","339","340","341","342","344","346","347","349"], hdd: [2800, 2600, 2500] },
+      zone4: { name: "Midwest", zips: ["460","461","462","463","464","465","466","467","468","469","470","471","472","473","474","475","476","477","478","479","500","501","502","503","504","505","506","507","508","509","510","511","512","513","514","515","516","520","521","522","523","524","525","526","527","528","550","551","553","554","555","556","557","558","559","560","561","562","563","564","565","566","567","600","601","602","603","604","605","606","607","608","609","610","611","612","613","614","615","616","617","618","619","620","621","622","623","624","625","626","627","628","629","630","631","632","633","634","635","636","637","638","639","640","641","644","645","646","647","648","649","650","651","652","653","654","655","656","657","658","659","660","661","662","664","665","666","667","668","669","670","671","672","673","674","675","676","677","678","679"], hdd: [6200, 6000, 5800] },
+      zone5: { name: "Great Plains / Mountain", zips: ["570","571","572","573","574","575","576","577","580","581","582","583","584","585","586","587","588","590","591","592","593","594","595","596","597","598","599","680","681","683","684","685","686","687","688","689","690","691","692","693","700","701","703","704","705","706","707","708","710","711","712","713","714","716","717","718","719","720","721","722","723","724","725","726","727","728","729","730","731","733","734","735","736","737","738","739","740","741","743","744","745","746","747","748","749","750","751","752","753","754","755","756","757","758","759","760","761","762","763","764","765","766","767","768","769","770","771","772","773","774","775","776","777","778","779","780","781","782","783","784","785","786","787","788","789","790","791","792","793","794","795","796","797","798","799","800","801","802","803","804","805","806","807","808","809","810","811","812","813","814","815","816","820","821","822","823","824","825","826","827","828","829","830","831","832","833","834","835","836","837","838","840","841","842","843","844","845","846","847","850","851","852","853","854","855","856","857","858","859","860","863","864","865","870","871","872","873","874","875","876","877","878","879","880","881","882","883","884","885"], hdd: [6800, 6500, 6300] },
+      zone6: { name: "Pacific Northwest", zips: ["970","971","972","973","974","975","976","977","978","979","980","981","982","983","984","985","986","988","989","990","991","992","993","994","995","996","997","998","999"], hdd: [4500, 4400, 4200] },
+      zone7: { name: "California / Southwest", zips: ["900","901","902","903","904","905","906","907","908","910","911","912","913","914","915","916","917","918","919","920","921","922","923","924","925","926","927","928","930","931","932","933","934","935","936","937","938","939","940","941","942","943","944","945","946","947","948","949","950","951","952","953","954","955","956","957","958","959","960","961"], hdd: [1800, 1700, 1600] }
+    };
+
+    const YEARS = [2023, 2022, 2021];
+    const EFFICIENCY = 0.85;
+    const BTU_PER_GAL = 138500;
+
+    function findZone(zip) {
+      const prefix = zip.substring(0, 3);
+      for (const zone of Object.values(HDD_DATA)) {
+        if (zone.zips.includes(prefix)) return zone;
+      }
+      return null;
+    }
+
+    function calculate() {
+      const zip = document.getElementById('zip').value.trim();
+      const price = parseFloat(document.getElementById('price').value);
+      const sqft = parseFloat(document.getElementById('sqft').value);
+      const errorEl = document.getElementById('error');
+      const resultsEl = document.getElementById('results');
+
+      errorEl.style.display = 'none';
+      resultsEl.style.display = 'none';
+
+      if (!/^\d{5}$/.test(zip)) { errorEl.textContent = 'Please enter a valid 5-digit zip code.'; errorEl.style.display = 'block'; return; }
+      if (!sqft || sqft < 100 || sqft > 20000) { errorEl.textContent = 'Please enter a home size between 100 and 20,000 sq ft.'; errorEl.style.display = 'block'; return; }
+      if (!price || price <= 0) { errorEl.textContent = 'Please enter a valid price per gallon.'; errorEl.style.display = 'block'; return; }
+
+      const zone = findZone(zip);
+      if (!zone) { errorEl.textContent = 'Zip code not found in our regional database. Try a nearby zip.'; errorEl.style.display = 'block'; return; }
+
+      document.getElementById('regionName').textContent = zone.name;
+
+      const BTU_PER_HDD = sqft * 0.8;
+      const gallonsPerHDD = (BTU_PER_HDD / BTU_PER_GAL) / EFFICIENCY;
+
+      const costs = zone.hdd.map((hdd, i) => {
+        const gallons = Math.round(hdd * gallonsPerHDD);
+        const cost = gallons * price;
+        return { year: YEARS[i], hdd, gallons, cost };
+      });
+
+      document.getElementById('yearCards').innerHTML = costs.map((c, i) => `
+        <div class="year-card${i === 0 ? ' highlight' : ''}">
+          <div class="year-label">
+            ${c.year} season
+            ${i === 0 ? '<span class="recent-badge">most recent</span>' : ''}
+          </div>
+          <div class="year-cost">${c.cost.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</div>
+          <div class="year-detail">
+            <strong>${c.hdd.toLocaleString()}</strong> heating degree days<br>
+            <strong>~${c.gallons.toLocaleString()}</strong> gallons estimated
+          </div>
+        </div>
+      `).join('');
+
+      const avg = costs.reduce((s, c) => s + c.cost, 0) / costs.length;
+      document.getElementById('avgCost').textContent = avg.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+      document.getElementById('assumptions').textContent = `Assumes a ${sqft.toLocaleString()} sq ft home with average insulation, oil furnace at 85% efficiency, and a heat loss factor of 0.8 BTU per sq ft per HDD. Heating degree days (HDD) are base-65°F. Data is regional — actual usage varies by insulation quality, thermostat settings, and equipment efficiency.`;
+
+      resultsEl.style.display = 'block';
+    }
+
+    ['zip', 'sqft', 'price'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+    });
+  </script>
+</body>
+</html>
