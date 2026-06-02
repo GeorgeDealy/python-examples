@@ -231,12 +231,57 @@
       color: #999;
       line-height: 1.7;
     }
+
+    .insulation-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .insulation-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b6b68;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .insulation-seg {
+      display: flex;
+      border: 1px solid #d5d5d2;
+      border-radius: 8px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .seg-btn {
+      flex: 1;
+      height: 36px;
+      border: none;
+      border-right: 1px solid #d5d5d2;
+      background: #fff;
+      font-size: 13px;
+      color: #6b6b68;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .seg-btn:last-child { border-right: none; }
+    .seg-btn:hover:not(.seg-btn--active) { background: #f5f5f3; }
+    .seg-btn--active { background: #1a1a1a; color: #fff; font-weight: 500; }
+
+    @media (max-width: 480px) {
+      .insulation-row { flex-direction: column; align-items: flex-start; }
+      .insulation-seg { width: 100%; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Heating Fuel Cost Estimator</h1>
-    <p class="subtitle">Estimate your seasonal heating oil cost based on historical weather data for your region.</p>
+    <p class="subtitle">Estimate your seasonal heating oil cost using actual weather data for your zip code.</p>
 
     <div class="input-grid">
       <div class="field">
@@ -260,11 +305,20 @@
       <button class="calc-btn" onclick="calculate()">Estimate &rarr;</button>
     </div>
 
+    <div class="insulation-row">
+      <span class="insulation-label">Insulation</span>
+      <div class="insulation-seg" id="insulationSeg">
+        <button type="button" class="seg-btn" data-ua="0.15" data-label="new / tight construction" onclick="selectInsulation(this)">New / tight</button>
+        <button type="button" class="seg-btn seg-btn--active" data-ua="0.35" data-label="average insulation" onclick="selectInsulation(this)">Average</button>
+        <button type="button" class="seg-btn" data-ua="0.75" data-label="older / drafty construction" onclick="selectInsulation(this)">Older / drafty</button>
+      </div>
+    </div>
+
     <div class="error" id="error"></div>
 
     <div class="results" id="results">
       <div class="region-badge">
-        &#x1F4CD; Region: <strong id="regionName"></strong>
+        &#x1F4CD; Location: <strong id="regionName"></strong>
       </div>
       <div class="year-cards" id="yearCards"></div>
       <div class="avg-row">
@@ -276,76 +330,128 @@
   </div>
 
   <script>
-    const HDD_DATA = {
-      zone1: { name: "Northern New England / Great Lakes", zips: ["010","011","012","013","014","015","016","017","018","019","021","022","023","024","025","026","027","028","029","030","031","032","033","034","035","036","037","038","039","040","041","042","043","044","045","046","047","048","049","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","480","481","482","483","484","485","486","487","488","489","490","491","492","493","494","495","496","497","498","499","530","531","532","534","535","537","538","539","540","541","542","543","544","545","546","547","548","549"], hdd: [7800, 7500, 7200] },
-      zone2: { name: "Mid-Atlantic / Southern New England", zips: ["060","061","062","063","064","065","066","067","068","069","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229"], hdd: [5400, 5100, 4900] },
-      zone3: { name: "Southeast / Mid-South", zips: ["230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300","301","302","303","304","305","306","307","308","309","310","311","312","313","314","315","316","317","318","319","320","321","322","323","324","325","326","327","328","329","330","331","332","333","334","335","336","337","338","339","340","341","342","344","346","347","349"], hdd: [2800, 2600, 2500] },
-      zone4: { name: "Midwest", zips: ["460","461","462","463","464","465","466","467","468","469","470","471","472","473","474","475","476","477","478","479","500","501","502","503","504","505","506","507","508","509","510","511","512","513","514","515","516","520","521","522","523","524","525","526","527","528","550","551","553","554","555","556","557","558","559","560","561","562","563","564","565","566","567","600","601","602","603","604","605","606","607","608","609","610","611","612","613","614","615","616","617","618","619","620","621","622","623","624","625","626","627","628","629","630","631","632","633","634","635","636","637","638","639","640","641","644","645","646","647","648","649","650","651","652","653","654","655","656","657","658","659","660","661","662","664","665","666","667","668","669","670","671","672","673","674","675","676","677","678","679"], hdd: [6200, 6000, 5800] },
-      zone5: { name: "Great Plains / Mountain", zips: ["570","571","572","573","574","575","576","577","580","581","582","583","584","585","586","587","588","590","591","592","593","594","595","596","597","598","599","680","681","683","684","685","686","687","688","689","690","691","692","693","700","701","703","704","705","706","707","708","710","711","712","713","714","716","717","718","719","720","721","722","723","724","725","726","727","728","729","730","731","733","734","735","736","737","738","739","740","741","743","744","745","746","747","748","749","750","751","752","753","754","755","756","757","758","759","760","761","762","763","764","765","766","767","768","769","770","771","772","773","774","775","776","777","778","779","780","781","782","783","784","785","786","787","788","789","790","791","792","793","794","795","796","797","798","799","800","801","802","803","804","805","806","807","808","809","810","811","812","813","814","815","816","820","821","822","823","824","825","826","827","828","829","830","831","832","833","834","835","836","837","838","840","841","842","843","844","845","846","847","850","851","852","853","854","855","856","857","858","859","860","863","864","865","870","871","872","873","874","875","876","877","878","879","880","881","882","883","884","885"], hdd: [6800, 6500, 6300] },
-      zone6: { name: "Pacific Northwest", zips: ["970","971","972","973","974","975","976","977","978","979","980","981","982","983","984","985","986","988","989","990","991","992","993","994","995","996","997","998","999"], hdd: [4500, 4400, 4200] },
-      zone7: { name: "California / Southwest", zips: ["900","901","902","903","904","905","906","907","908","910","911","912","913","914","915","916","917","918","919","920","921","922","923","924","925","926","927","928","930","931","932","933","934","935","936","937","938","939","940","941","942","943","944","945","946","947","948","949","950","951","952","953","954","955","956","957","958","959","960","961"], hdd: [1800, 1700, 1600] }
-    };
-
-    const YEARS = [2023, 2022, 2021];
     const EFFICIENCY = 0.85;
     const BTU_PER_GAL = 138500;
+    const HDD_BASE = 65;
 
-    function findZone(zip) {
-      const prefix = zip.substring(0, 3);
-      for (const zone of Object.values(HDD_DATA)) {
-        if (zone.zips.includes(prefix)) return zone;
-      }
-      return null;
+    function selectInsulation(btn) {
+      document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('seg-btn--active'));
+      btn.classList.add('seg-btn--active');
     }
 
-    function calculate() {
-      const zip = document.getElementById('zip').value.trim();
-      const price = parseFloat(document.getElementById('price').value);
-      const sqft = parseFloat(document.getElementById('sqft').value);
-      const errorEl = document.getElementById('error');
-      const resultsEl = document.getElementById('results');
+    function getSeasons() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      // A season ends in April; if we're past April the current-year season is complete
+      const lastEndYear = month > 4 ? year : year - 1;
+      const seasons = [];
+      for (let i = 0; i < 3; i++) {
+        const endYear = lastEndYear - i;
+        seasons.push({
+          label: `${endYear - 1}–${String(endYear).slice(2)}`,
+          start: `${endYear - 1}-10-01`,
+          end:   `${endYear}-04-30`
+        });
+      }
+      return seasons;
+    }
 
-      errorEl.style.display = 'none';
+    async function calculate() {
+      const zip      = document.getElementById('zip').value.trim();
+      const price    = parseFloat(document.getElementById('price').value);
+      const sqft     = parseFloat(document.getElementById('sqft').value);
+      const errorEl  = document.getElementById('error');
+      const resultsEl = document.getElementById('results');
+      const btn      = document.querySelector('.calc-btn');
+
+      errorEl.style.display  = 'none';
       resultsEl.style.display = 'none';
 
-      if (!/^\d{5}$/.test(zip)) { errorEl.textContent = 'Please enter a valid 5-digit zip code.'; errorEl.style.display = 'block'; return; }
+      if (!/^\d{5}$/.test(zip))              { errorEl.textContent = 'Please enter a valid 5-digit zip code.';                        errorEl.style.display = 'block'; return; }
       if (!sqft || sqft < 100 || sqft > 20000) { errorEl.textContent = 'Please enter a home size between 100 and 20,000 sq ft.'; errorEl.style.display = 'block'; return; }
-      if (!price || price <= 0) { errorEl.textContent = 'Please enter a valid price per gallon.'; errorEl.style.display = 'block'; return; }
+      if (!price || price <= 0)              { errorEl.textContent = 'Please enter a valid price per gallon.';                        errorEl.style.display = 'block'; return; }
 
-      const zone = findZone(zip);
-      if (!zone) { errorEl.textContent = 'Zip code not found in our regional database. Try a nearby zip.'; errorEl.style.display = 'block'; return; }
+      btn.textContent = 'Loading…';
+      btn.disabled = true;
 
-      document.getElementById('regionName').textContent = zone.name;
+      try {
+        // Step 1 — geocode zip to lat/lon
+        const geoRes = await fetch(`https://api.zippopotam.us/us/${zip}`);
+        if (!geoRes.ok) throw new Error('Zip code not found. Please check the zip code and try again.');
+        const geoData = await geoRes.json();
+        if (!geoData.places || geoData.places.length === 0) throw new Error('No location found for that zip code.');
+        const place = geoData.places[0];
+        const lat   = parseFloat(place.latitude);
+        const lon   = parseFloat(place.longitude);
+        const locationName = `${place['place name']}, ${place['state abbreviation']}`;
 
-      const BTU_PER_HDD = sqft * 0.8;
-      const gallonsPerHDD = (BTU_PER_HDD / BTU_PER_GAL) / EFFICIENCY;
+        // Step 2 — fetch 3 heating seasons of daily temps from Open-Meteo archive
+        const seasons   = getSeasons();
+        const startDate = seasons[seasons.length - 1].start;
+        const endDate   = seasons[0].end;
+        const weatherUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
+        const weatherRes = await fetch(weatherUrl);
+        if (!weatherRes.ok) throw new Error('Unable to fetch weather data. Please try again.');
+        const weatherData = await weatherRes.json();
+        if (!weatherData.daily) throw new Error('Unexpected response from weather service.');
 
-      const costs = zone.hdd.map((hdd, i) => {
-        const gallons = Math.round(hdd * gallonsPerHDD);
-        const cost = gallons * price;
-        return { year: YEARS[i], hdd, gallons, cost };
-      });
+        const dates = weatherData.daily.time;
+        const tmax  = weatherData.daily.temperature_2m_max;
+        const tmin  = weatherData.daily.temperature_2m_min;
 
-      document.getElementById('yearCards').innerHTML = costs.map((c, i) => `
-        <div class="year-card${i === 0 ? ' highlight' : ''}">
-          <div class="year-label">
-            ${c.year} season
-            ${i === 0 ? '<span class="recent-badge">most recent</span>' : ''}
+        // Step 3 — calculate HDDs per season and estimate costs
+        const activeBtn   = document.querySelector('.seg-btn--active');
+        const UA_PER_SQFT = parseFloat(activeBtn.dataset.ua);
+        const insulLabel  = activeBtn.dataset.label;
+        const Cd          = 0.65;  // ASHRAE degree-day correction for internal heat gains
+        const BTU_PER_HDD = sqft * UA_PER_SQFT * 24 * Cd;
+        const gallonsPerHDD = (BTU_PER_HDD / BTU_PER_GAL) / EFFICIENCY;
+
+        const results = seasons.map(season => {
+          let hdd = 0;
+          for (let i = 0; i < dates.length; i++) {
+            if (dates[i] < season.start || dates[i] > season.end) continue;
+            if (tmax[i] === null || tmin[i] === null) continue;
+            hdd += Math.max(0, HDD_BASE - (tmax[i] + tmin[i]) / 2);
+          }
+          hdd = Math.round(hdd);
+          const gallons = Math.round(hdd * gallonsPerHDD);
+          const cost    = gallons * price;
+          return { label: season.label, hdd, gallons, cost };
+        });
+
+        // Step 4 — render
+        document.getElementById('regionName').textContent = locationName;
+
+        document.getElementById('yearCards').innerHTML = results.map((c, i) => `
+          <div class="year-card${i === 0 ? ' highlight' : ''}">
+            <div class="year-label">
+              ${c.label} season
+              ${i === 0 ? '<span class="recent-badge">most recent</span>' : ''}
+            </div>
+            <div class="year-cost">${c.cost.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</div>
+            <div class="year-detail">
+              <strong>${c.hdd.toLocaleString()}</strong> heating degree days<br>
+              <strong>~${c.gallons.toLocaleString()}</strong> gallons estimated
+            </div>
           </div>
-          <div class="year-cost">${c.cost.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</div>
-          <div class="year-detail">
-            <strong>${c.hdd.toLocaleString()}</strong> heating degree days<br>
-            <strong>~${c.gallons.toLocaleString()}</strong> gallons estimated
-          </div>
-        </div>
-      `).join('');
+        `).join('');
 
-      const avg = costs.reduce((s, c) => s + c.cost, 0) / costs.length;
-      document.getElementById('avgCost').textContent = avg.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+        const avg = results.reduce((s, c) => s + c.cost, 0) / results.length;
+        document.getElementById('avgCost').textContent = avg.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
-      document.getElementById('assumptions').textContent = `Assumes a ${sqft.toLocaleString()} sq ft home with average insulation, oil furnace at 85% efficiency, and a heat loss factor of 0.8 BTU per sq ft per HDD. Heating degree days (HDD) are base-65°F. Data is regional — actual usage varies by insulation quality, thermostat settings, and equipment efficiency.`;
+        document.getElementById('assumptions').textContent = `Assumes a ${sqft.toLocaleString()} sq ft home with ${insulLabel}, oil furnace at 85% efficiency, UA = ${UA_PER_SQFT} BTU/hr/°F/sq ft, and an ASHRAE degree-day correction factor (Cd) of 0.65 for internal heat gains. Heating degree days (HDD) are base-65°F, calculated from actual daily temperature records via Open-Meteo for ${locationName}. Actual usage varies by thermostat settings and equipment efficiency.`;
 
-      resultsEl.style.display = 'block';
+        resultsEl.style.display = 'block';
+
+      } catch (err) {
+        errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errorEl.style.display = 'block';
+      } finally {
+        btn.innerHTML = 'Estimate &rarr;';
+        btn.disabled = false;
+      }
     }
 
     ['zip', 'sqft', 'price'].forEach(id => {
