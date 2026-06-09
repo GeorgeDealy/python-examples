@@ -41,7 +41,7 @@
 
     .input-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
       gap: 10px;
       align-items: end;
       margin-bottom: 1.5rem;
@@ -49,6 +49,7 @@
 
     @media (max-width: 560px) {
       .input-grid { grid-template-columns: 1fr 1fr; }
+      .therm-wrap { grid-column: 1 / -1; }
       .calc-btn { grid-column: 1 / -1; }
     }
 
@@ -302,6 +303,13 @@
           <input type="number" id="price" placeholder="4.50" min="0.01" step="0.01" />
         </div>
       </div>
+      <div class="field therm-wrap">
+        <label>Thermostat</label>
+        <div class="sqft-wrap">
+          <input type="number" id="thermostat" value="68" min="55" max="80" step="1" />
+          <span class="suffix">°F</span>
+        </div>
+      </div>
       <button class="calc-btn" onclick="calculate()">Estimate &rarr;</button>
     </div>
 
@@ -358,9 +366,10 @@
     }
 
     async function calculate() {
-      const zip      = document.getElementById('zip').value.trim();
-      const price    = parseFloat(document.getElementById('price').value);
-      const sqft     = parseFloat(document.getElementById('sqft').value);
+      const zip        = document.getElementById('zip').value.trim();
+      const price      = parseFloat(document.getElementById('price').value);
+      const sqft       = parseFloat(document.getElementById('sqft').value);
+      const thermostat = parseFloat(document.getElementById('thermostat').value);
       const errorEl  = document.getElementById('error');
       const resultsEl = document.getElementById('results');
       const btn      = document.querySelector('.calc-btn');
@@ -371,6 +380,7 @@
       if (!/^\d{5}$/.test(zip))              { errorEl.textContent = 'Please enter a valid 5-digit zip code.';                        errorEl.style.display = 'block'; return; }
       if (!sqft || sqft < 100 || sqft > 20000) { errorEl.textContent = 'Please enter a home size between 100 and 20,000 sq ft.'; errorEl.style.display = 'block'; return; }
       if (!price || price <= 0)              { errorEl.textContent = 'Please enter a valid price per gallon.';                        errorEl.style.display = 'block'; return; }
+      if (!thermostat || thermostat < 55 || thermostat > 80) { errorEl.textContent = 'Please enter a thermostat setting between 55°F and 80°F.'; errorEl.style.display = 'block'; return; }
 
       btn.textContent = 'Loading…';
       btn.disabled = true;
@@ -413,7 +423,7 @@
           for (let i = 0; i < dates.length; i++) {
             if (dates[i] < season.start || dates[i] > season.end) continue;
             if (tmax[i] === null || tmin[i] === null) continue;
-            hdd += Math.max(0, HDD_BASE - (tmax[i] + tmin[i]) / 2);
+            hdd += Math.max(0, thermostat - (tmax[i] + tmin[i]) / 2);
           }
           hdd = Math.round(hdd);
           const gallons = Math.round(hdd * gallonsPerHDD);
@@ -441,7 +451,7 @@
         const avg = results.reduce((s, c) => s + c.cost, 0) / results.length;
         document.getElementById('avgCost').textContent = avg.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
-        document.getElementById('assumptions').textContent = `Assumes a ${sqft.toLocaleString()} sq ft home with ${insulLabel}, oil furnace at 85% efficiency, UA = ${UA_PER_SQFT} BTU/hr/°F/sq ft, and an ASHRAE degree-day correction factor (Cd) of 0.65 for internal heat gains. Heating degree days (HDD) are base-65°F, calculated from actual daily temperature records via Open-Meteo for ${locationName}. Actual usage varies by thermostat settings and equipment efficiency.`;
+        document.getElementById('assumptions').textContent = `Assumes a ${sqft.toLocaleString()} sq ft home with ${insulLabel}, oil furnace at 85% efficiency, UA = ${UA_PER_SQFT} BTU/hr/°F/sq ft, and an ASHRAE degree-day correction factor (Cd) of 0.65 for internal heat gains. Heating degree days (HDD) are base-${thermostat}°F (your thermostat setting), calculated from actual daily temperature records via Open-Meteo for ${locationName}. Actual usage varies by equipment efficiency.`;
 
         resultsEl.style.display = 'block';
 
@@ -454,7 +464,7 @@
       }
     }
 
-    ['zip', 'sqft', 'price'].forEach(id => {
+    ['zip', 'sqft', 'price', 'thermostat'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
     });
   </script>

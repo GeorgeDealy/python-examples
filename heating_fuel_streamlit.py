@@ -76,14 +76,14 @@ def fetch_weather(lat, lon, start_date, end_date):
     return daily["time"], daily["temperature_2m_max"], daily["temperature_2m_min"]
 
 
-def season_hdd(dates, tmax, tmin, season):
+def season_hdd(dates, tmax, tmin, season, hdd_base=HDD_BASE):
     total = 0.0
     for d, hi, lo in zip(dates, tmax, tmin):
         if d < season["start"] or d > season["end"]:
             continue
         if hi is None or lo is None:
             continue
-        total += max(0.0, HDD_BASE - (hi + lo) / 2)
+        total += max(0.0, hdd_base - (hi + lo) / 2)
     return round(total)
 
 
@@ -104,13 +104,15 @@ st.set_page_config(
 st.title("🔥 Heating Fuel Cost Estimator")
 st.caption("Estimate your seasonal heating oil cost using actual weather data for your zip code.")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     zip_code = st.text_input("Zip code", placeholder="e.g. 02101", max_chars=5)
 with col2:
     sqft = st.number_input("Home size (sq ft)", min_value=100, max_value=20_000, value=1_500, step=100)
 with col3:
     price = st.number_input("Price per gallon ($)", min_value=0.01, value=4.50, step=0.01, format="%.2f")
+with col4:
+    thermostat = st.number_input("Thermostat (°F)", min_value=55, max_value=80, value=68, step=1)
 
 insulation = st.radio(
     "Insulation quality",
@@ -158,7 +160,7 @@ if run:
     costs = []
 
     for i, (season, col) in enumerate(zip(seasons, result_cols)):
-        hdd           = season_hdd(dates, tmax, tmin, season)
+        hdd           = season_hdd(dates, tmax, tmin, season, hdd_base=thermostat)
         gallons, cost = estimate_cost(hdd, sqft, ua, price)
         costs.append(cost)
 
@@ -174,6 +176,6 @@ if run:
     st.caption(
         f"Assumes a {sqft:,.0f} sq ft home with {insul_desc}, oil furnace at 85% efficiency, "
         f"UA = {ua} BTU/hr/°F/sq ft, Cd = {Cd} (ASHRAE). "
-        f"HDD calculated from actual daily temperature records via Open-Meteo. "
-        f"Actual usage varies by thermostat settings and equipment efficiency."
+        f"HDD calculated from actual daily temperature records via Open-Meteo, base {thermostat}°F. "
+        f"Actual usage varies by equipment efficiency."
     )

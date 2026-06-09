@@ -73,14 +73,14 @@ def fetch_weather(lat, lon, start_date, end_date):
     return daily["time"], daily["temperature_2m_max"], daily["temperature_2m_min"]
 
 
-def season_hdd(dates, tmax, tmin, season):
+def season_hdd(dates, tmax, tmin, season, hdd_base=HDD_BASE):
     total = 0.0
     for d, hi, lo in zip(dates, tmax, tmin):
         if d < season["start"] or d > season["end"]:
             continue
         if hi is None or lo is None:
             continue
-        total += max(0.0, HDD_BASE - (hi + lo) / 2)
+        total += max(0.0, hdd_base - (hi + lo) / 2)
     return round(total)
 
 
@@ -129,6 +129,14 @@ def prompt_price():
     return ask("Price per gallon ($)", validate)
 
 
+def prompt_thermostat():
+    def validate(v):
+        n = int(v)
+        if 55 <= n <= 80:
+            return n
+    return ask("Thermostat setting (°F)", validate, default=68)
+
+
 def prompt_insulation():
     print("\nInsulation quality:")
     for i, (label, _, _) in enumerate(INSULATION_TIERS, 1):
@@ -148,6 +156,7 @@ def main():
     zip_code         = prompt_zip()
     sqft             = prompt_sqft()
     price            = prompt_price()
+    thermostat               = prompt_thermostat()
     tier_label, ua, insul_desc = prompt_insulation()
 
     print("\nFetching location…", end="", flush=True)
@@ -184,7 +193,7 @@ def main():
 
     total_cost = 0.0
     for i, season in enumerate(seasons):
-        hdd             = season_hdd(dates, tmax, tmin, season)
+        hdd             = season_hdd(dates, tmax, tmin, season, hdd_base=thermostat)
         gallons, cost   = estimate_cost(hdd, sqft, ua, price)
         total_cost     += cost
         flag            = "  ◀ most recent" if i == 0 else ""
