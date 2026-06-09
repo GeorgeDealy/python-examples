@@ -467,6 +467,11 @@
     ['zip', 'sqft', 'price', 'thermostat'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
     });
+
+    document.getElementById('price').addEventListener('blur', function () {
+      const v = parseFloat(this.value);
+      if (!isNaN(v) && v > 0) this.value = v.toFixed(2);
+    });
   </script>
 </body>
 </html>
