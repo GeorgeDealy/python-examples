@@ -91,6 +91,31 @@
 
     .price-wrap:focus-within, .sqft-wrap:focus-within { border-color: #888; }
 
+    .price-steppers {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #e5e5e2;
+      height: 100%;
+    }
+
+    .price-steppers button {
+      flex: 1;
+      width: 18px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #888;
+      font-size: 9px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .price-steppers button:hover { background: #f5f5f3; color: #1a1a1a; }
+    .price-steppers button:first-child { border-bottom: 1px solid #e5e5e2; }
+
     .price-wrap .prefix {
       padding: 0 10px;
       color: #999;
@@ -301,6 +326,10 @@
         <div class="price-wrap">
           <span class="prefix">$</span>
           <input type="text" inputmode="decimal" id="price" placeholder="4.50" value="4.50" />
+          <div class="price-steppers">
+            <button type="button" tabindex="-1" onclick="stepPrice(0.01)">&#9650;</button>
+            <button type="button" tabindex="-1" onclick="stepPrice(-0.01)">&#9660;</button>
+          </div>
         </div>
       </div>
       <div class="field therm-wrap">
@@ -341,6 +370,13 @@
     const EFFICIENCY = 0.85;
     const BTU_PER_GAL = 138500;
     const HDD_BASE = 65;
+
+    function stepPrice(delta) {
+      const input = document.getElementById('price');
+      const v = parseFloat(input.value) || 0;
+      const newVal = Math.max(0.01, Math.round((v + delta) * 100) / 100);
+      input.value = newVal.toFixed(2);
+    }
 
     function selectInsulation(btn) {
       document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('seg-btn--active'));
